@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop Profile</title>
+  <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <nav id="appNav"></nav>
+
+  <main class="container py-4" style="max-width: 760px;">
+    <h1 class="h3 mb-1">Shop Profile</h1>
+    <p class="text-muted mb-4">Ye tafseel receipt, reports aur Rate List ke header/footer mein aati hai.</p>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6">Logo</h2>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <img id="logoPreview" class="logo-preview d-none" alt="Logo">
+          <div>
+            <input id="logoFile" type="file" class="form-control" accept="image/png,image/jpeg,image/webp">
+            <div class="form-text">PNG, JPG ya WEBP, 1 MB tak.</div>
+          </div>
+          <button id="logoBtn" type="button" class="btn btn-outline-primary">Logo upload karein</button>
+        </div>
+      </div>
+    </div>
+
+    <form id="profileForm" class="card" novalidate>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label for="shopName" class="form-label">Dukaan ka naam *</label>
+            <input id="shopName" class="form-control" maxlength="100" required>
+          </div>
+          <div class="col-md-6">
+            <label for="phone" class="form-label">Phone</label>
+            <input id="phone" class="form-control" maxlength="30" inputmode="tel">
+          </div>
+          <div class="col-md-6">
+            <label for="email" class="form-label">Email</label>
+            <input id="email" type="email" class="form-control" maxlength="100">
+          </div>
+          <div class="col-12">
+            <label for="address" class="form-label">Address</label>
+            <input id="address" class="form-control" maxlength="250">
+          </div>
+          <div class="col-md-6">
+            <label for="registrationNo" class="form-label">NTN / Registration No</label>
+            <input id="registrationNo" class="form-control" maxlength="50">
+          </div>
+          <div class="col-md-3">
+            <label for="currencySymbol" class="form-label">Currency *</label>
+            <input id="currencySymbol" class="form-control" maxlength="10" required>
+          </div>
+          <div class="col-md-3">
+            <label for="defaultLanguage" class="form-label">Zabaan</label>
+            <select id="defaultLanguage" class="form-select">
+              <option value="RomanUrdu">Roman Urdu</option>
+              <option value="English">English</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label for="receiptHeader" class="form-label">Receipt ka header</label>
+            <input id="receiptHeader" class="form-control" maxlength="250">
+          </div>
+          <div class="col-12">
+            <label for="receiptFooter" class="form-label">Receipt ka footer</label>
+            <input id="receiptFooter" class="form-control" maxlength="250" placeholder="Shukriya, qist waqt par ada karein">
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex justify-content-end">
+        <button id="saveBtn" type="submit" class="btn btn-primary">Save karein</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="/lib/jquery/dist/jquery.min.js"></script>
+  <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    $(function () {
+      if (!App.init('shop-profile', 'Shop Profile', 'Settings.Edit')) return;
+
+      var FIELDS = ['shopName', 'phone', 'email', 'address', 'registrationNo',
+                    'currencySymbol', 'defaultLanguage', 'receiptHeader', 'receiptFooter'];
+
+      function fill(p) {
+        FIELDS.forEach(function (f) { $('#' + f).val(p[f] || ''); });
+        if (p.logoPath) $('#logoPreview').attr('src', p.logoPath).removeClass('d-none');
+      }
+
+      Api.get('/api/shop-profile').then(fill).catch(function (xhr) {
+        App.notify(Api.errorMessage(xhr), 'danger');
+      });
+
+      $('#profileForm').on('submit', function (e) {
+        e.preventDefault();
+        var payload = {};
+        FIELDS.forEach(function (f) { payload[f] = $.trim($('#' + f).val()); });
+        if (!payload.shopName) { App.notify('Dukaan ka naam likhna zaroori hai.', 'warning'); return; }
+        if (!payload.currencySymbol) { App.notify('Currency likhna zaroori hai.', 'warning'); return; }
+
+        var $btn = $('#saveBtn').prop('disabled', true).text('Save ho raha hai...');
+        Api.put('/api/shop-profile', payload)
+          .then(function (p) { fill(p); App.notify('Shop Profile save ho gaya.'); $('#navShop').text(p.shopName); })
+          .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
+          .finally(function () { $btn.prop('disabled', false).text('Save karein'); });
+      });
+
+      $('#logoBtn').on('click', function () {
+        var file = $('#logoFile')[0].files[0];
+        if (!file) { App.notify('Pehle logo ki file chunein.', 'warning'); return; }
+        var fd = new FormData();
+        fd.append('file', file);
+        var $btn = $('#logoBtn').prop('disabled', true);
+        Api.upload('/api/shop-profile/logo', fd)
+          .then(function (r) {
+            $('#logoPreview').attr('src', r.logoPath).removeClass('d-none');
+            $('#navLogo').attr('src', r.logoPath).removeClass('d-none');
+            $('#logoFile').val('');
+            App.notify('Logo badal gaya.');
+          })
+          .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
+          .finally(function () { $btn.prop('disabled', false); });
+      });
+    });
+  </script>
+</body>
+</html>

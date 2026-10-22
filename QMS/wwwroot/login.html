@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <main class="login-box card shadow-sm">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <img id="shopLogo" class="login-logo d-none" alt="">
+        <h1 id="shopName" class="h4 mt-2 mb-0"></h1>
+      </div>
+
+      <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input id="username" class="form-control form-control-lg" autocomplete="username" autocapitalize="none" required autofocus>
+        </div>
+        <div class="mb-4">
+          <label for="password" class="form-label">Password</label>
+          <input id="password" type="password" class="form-control form-control-lg" autocomplete="current-password" required>
+        </div>
+        <button id="loginBtn" type="submit" class="btn btn-primary btn-lg w-100">Login</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="/lib/jquery/dist/jquery.min.js"></script>
+  <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    $(function () {
+      if (Api.isLoggedIn()) { location.replace('/index.html'); return; }
+
+      $.getJSON('/api/shop-profile/public').done(function (p) {
+        $('#shopName').text(p.shopName);
+        document.title = 'Login - ' + p.shopName;
+        if (p.logoPath) $('#shopLogo').attr('src', p.logoPath).removeClass('d-none');
+      });
+
+      $('#loginForm').on('submit', function (e) {
+        e.preventDefault();
+        var username = $.trim($('#username').val());
+        var password = $('#password').val();
+        if (!username || !password) {
+          $('#loginError').text('Username aur password likhein.').removeClass('d-none');
+          return;
+        }
+        var $btn = $('#loginBtn').prop('disabled', true).text('Ruk jayein...');
+        $('#loginError').addClass('d-none');
+
+        Api.login(username, password)
+          .then(function () { location.replace('/index.html'); })
+          .catch(function (xhr) {
+            $('#loginError').text(Api.errorMessage(xhr)).removeClass('d-none');
+            $btn.prop('disabled', false).text('Login');
+          });
+      });
+    });
+  </script>
+</body>
+</html>

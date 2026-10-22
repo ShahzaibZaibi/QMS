@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <nav id="appNav"></nav>
+
+  <main class="container py-4">
+    <h1 class="h3 mb-1">Dashboard</h1>
+    <p class="text-muted mb-4">Khush aamdeed, <span id="welcomeName"></span>.</p>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h5">Software tayyar ho raha hai</h2>
+        <p class="mb-0 text-muted">
+          Aaj ki wasooli, due/late qistein aur baqaya yahan Marhala 5 mein aayenge.
+          Abhi login, permissions aur Shop Profile kaam kar rahe hain.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/lib/jquery/dist/jquery.min.js"></script>
+  <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    $(function () {
+      if (!App.init('dashboard', 'Dashboard')) return;
+      $('#welcomeName').text(Api.user().fullName);
+    });
+  </script>
+</body>
+</html>

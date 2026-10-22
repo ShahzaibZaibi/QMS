@@ -1,0 +1,21 @@
+:root { --qms-radius: .6rem; }
+
+html { font-size: 16px; }
+body { min-height: 100vh; background: #f6f7f9; }
+
+/* Bade buttons, saaf font: dukandar ke liye */
+.btn { padding: .55rem 1.1rem; font-size: 1rem; }
+.form-control, .form-select { padding: .6rem .8rem; font-size: 1rem; }
+.card { border-radius: var(--qms-radius); }
+
+.nav-logo { height: 32px; width: auto; border-radius: .25rem; background: #fff; }
+
+.login-box { max-width: 380px; margin: 8vh auto 0; }
+.login-logo { max-height: 72px; max-width: 100%; }
+
+.logo-preview { max-height: 90px; max-width: 220px; border: 1px solid #dee2e6; border-radius: .4rem; padding: .25rem; background: #fff; }
+
+/* Qist ke rang (aage kaam aayenge): late laal, aaj ki due peeli, paid hari */
+.status-late { background: #fde8e8; color: #9b1c1c; }
+.status-due  { background: #fff7d6; color: #8a6d00; }
+.status-paid { background: #e3f5e6; color: #1e6b2e; }
