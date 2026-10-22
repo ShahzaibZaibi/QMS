@@ -1,0 +1,16 @@
+-- PKT (UTC+5): "aaj" aur "abhi" ka ek hi source. Baqi sab SPs/defaults yehi functions istemal karein.
+CREATE OR ALTER FUNCTION dbo.fn_PktNow()
+RETURNS DATETIME2(0)
+AS
+BEGIN
+    RETURN CAST(DATEADD(HOUR, 5, SYSUTCDATETIME()) AS DATETIME2(0));
+END
+GO
+
+CREATE OR ALTER FUNCTION dbo.fn_PktToday()
+RETURNS DATE
+AS
+BEGIN
+    RETURN CAST(DATEADD(HOUR, 5, SYSUTCDATETIME()) AS DATE);
+END
+GO
