@@ -1,0 +1,13 @@
+# Build output
+bin/
+obj/
+# Visual Studio
+.vs/
+*.user
+*.suo
+# Secrets / local config
+appsettings.Production.json
+secrets.json
+# Runtime files
+logs/
+QMS/wwwroot/uploads/
