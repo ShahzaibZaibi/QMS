@@ -5,7 +5,8 @@
   /* Naya page banay to yahan ek line barhayein. permission na likhein to sab ko dikhega. */
   var MENU = [
     { key: 'dashboard',    text: 'Dashboard',    href: '/index.html' },
-    { key: 'shop-profile', text: 'Shop Profile', href: '/shop-profile.html', permission: 'Settings.Edit' }
+    { key: 'shop-profile', text: 'Shop Profile', href: '/shop-profile.html', permission: 'Settings.Edit' },
+    { key: 'change-password', text: 'Password badlein', href: '/change-password.html' }
   ];
 
   function hasPermission(code) {

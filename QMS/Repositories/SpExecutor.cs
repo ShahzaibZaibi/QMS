@@ -10,7 +10,7 @@ public sealed class SpExecutor : ISpExecutor
 
     public SpExecutor(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("Default");
+        _connectionString = configuration.GetConnectionString("Default") ?? "";
         if (string.IsNullOrWhiteSpace(_connectionString))
             throw new InvalidOperationException("ConnectionStrings:Default set nahi hai.");
     }

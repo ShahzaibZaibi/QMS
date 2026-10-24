@@ -15,16 +15,30 @@ Electronics dukaan ke liye qist ka hisaab. Poori specification: `QMS-Docment.pdf
 ## Pehli baar chalane ka tareeqa (Development)
 1. SQL Server Developer Edition + SSMS install ho.
 2. SSMS mein `Database/Phase1/` ki scripts **tarteeb se** chalayein (har ek poori select karke F5):
-   `01_Tables.sql` (database `QistDB` bhi banata hai), `02_StoredProcedures.sql`, `03_SeedData.sql`.
-3. Connection string: `QMS/appsettings.Development.json` mein `localhost` aur Windows login hai. Aap ka SQL Server alag instance par ho (jaise `.\SQLEXPRESS`) to `Server=` badal lein.
-4. Owner ka password set karein (git mein nahi jata):
-   ```bash
-   cd QMS
-   dotnet user-secrets set "Bootstrap:OwnerPassword" "<kam az kam 8 harf>"
+   `01_Tables.sql` (database `QistDB` bhi banata hai), `02_StoredProcedures.sql`, `03_SeedData.sql`, `04_PasswordProcedures.sql`.
+3. Connection string `QMS/appsettings.Development.json` mein hai (`Data Source=.`, Windows login). Aap ka SQL Server alag instance par ho (jaise `.\SQLEXPRESS`) to `Data Source=` badal lein.
+4. `QMS` folder ke andar `dotnet run`. **Pehli run par Owner user khud ban jata hai aur console mein username aur password sirf ek baar dikhta hai** (neeche misaal). Usay copy kar lein.
    ```
-5. `dotnet run` chalayein. Pehli run par app Owner user (`owner`) khud bana deti hai.
-6. Browser mein `https://localhost:7229` kholein, `owner` + upar wale password se login karein, phir **Shop Profile** mein apni dukaan ka naam likhein.
-7. Check: `/health` par `Healthy` aana chahiye. Haath se test: `Database/Tests/Phase1_Smoke.sql`.
+   PEHLA OWNER USER BAN GAYA
+     Username : owner
+     Password : xxxxxxxxxxxx
+   ```
+   Apna pasandida password pehle se rakhna ho to: `dotnet user-secrets set "Bootstrap:OwnerPassword" "<kam az kam 8 harf>"` phir `dotnet run`.
+5. Browser mein `http://localhost:5089` kholein, login karein. Menu mein **Password badlein** se password badal lein, aur **Shop Profile** mein dukaan ka naam likhein.
+6. Check: `/health` par `Healthy` aana chahiye. Haath se test: `Database/Tests/Phase1_Smoke.sql`.
+
+**Password bhool gaye?** `dotnet run -- --reset-owner-password` Owner ka naya random password console mein dikha kar app band kar deta hai.
+
+### Browser mein "Not secure" / certificate ka masla
+- Sab se aasan (sirf apne computer par development): `http://localhost:5089` istemal karein. `dotnet run` yehi kholta hai. Browser "Not secure" likhta hai kyunke http hai, localhost par ye theek hai.
+- HTTPS chahiye to ek baar development certificate trust karein, phir browser band karke dobara kholein:
+  ```bash
+  dotnet dev-certs https --clean
+  dotnet dev-certs https --trust
+  dotnet run --launch-profile https      # https://localhost:7229
+  ```
+  Windows par ek dialog aata hai: **Yes** dabayein. Ye certificate sirf `localhost` ke liye hai; IP ya computer ke naam (jaise `https://192.168.1.5`) se kholenge to warning phir aayegi.
+- Asli server / dukaan ke network ke liye alag se asli certificate lagana hoga (aage ke marahil mein).
 
 Aage ke marahil ki scripts bhi isi tarah `Database/Phase2/`, `Phase3/` ... mein aayengi.
 

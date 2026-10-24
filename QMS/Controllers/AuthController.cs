@@ -28,6 +28,15 @@ public sealed class AuthController : ControllerBase
         return user;
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    [EnableRateLimiting("login")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken ct)
+    {
+        await _auth.ChangePasswordAsync(User.GetUserId(), request.CurrentPassword, request.NewPassword, ct);
+        return NoContent();
+    }
+
     [HttpPost("logout")]
     [AllowAnonymous]
     public async Task<IActionResult> Logout()

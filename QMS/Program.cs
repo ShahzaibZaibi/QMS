@@ -60,17 +60,26 @@ builder.Services.AddHealthChecks().AddCheck<DbHealthCheck>("database");
 var app = builder.Build();
 
 // ---- Pehla Owner (sirf jab koi user nahi). Database scripts aap SSMS mein khud chalate hain. ----
+// Password bhool jayein:  dotnet run -- --reset-owner-password
+var resetOwner = args.Contains("--reset-owner-password");
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        await scope.ServiceProvider.GetRequiredService<OwnerBootstrapper>().RunAsync();
+        var bootstrapper = scope.ServiceProvider.GetRequiredService<OwnerBootstrapper>();
+        if (resetOwner)
+        {
+            await bootstrapper.ResetOwnerPasswordAsync();
+            return;   // password badal kar app band, server shuru nahi hota
+        }
+        await bootstrapper.RunAsync();
     }
     catch (SqlException ex)
     {
         app.Logger.LogError(ex,
             "Database se kaam nahi ho saka. Check karein: connection string sahi hai, aur SSMS mein " +
-            "Database/Phase1 ki scripts 01, 02, 03 tarteeb se chal chuki hain.");
+            "Database/Phase1 ki scripts 01, 02, 03, 04 tarteeb se chal chuki hain.");
+        if (resetOwner) return;
     }
 }
 

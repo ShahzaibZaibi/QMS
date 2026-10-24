@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
+using QMS.Infrastructure;
 using QMS.Models;
 using QMS.Models.DTOs;
 using QMS.Repositories;
@@ -40,6 +41,31 @@ public sealed class AuthService : IAuthService
 
         _cache.Set(key, loaded.User, CacheFor);
         return loaded.User;
+    }
+
+    public const int MinPasswordLength = 8;
+
+    public async Task ChangePasswordAsync(int userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        if (newPassword.Length < MinPasswordLength)
+            throw new BusinessException($"Naya password kam az kam {MinPasswordLength} harf ka ho.");
+        if (newPassword == currentPassword)
+            throw new BusinessException("Naya password purane se alag ho.");
+
+        var loaded = await LoadUserAsync("usp_Auth_GetUser", new { UserId = userId }, ct);
+        if (loaded is null || !loaded.Row.IsActive)
+            throw new BusinessException("User nahi mila.");
+
+        var check = _hasher.VerifyHashedPassword(new AppUser(), loaded.Row.PasswordHash, currentPassword);
+        if (check == PasswordVerificationResult.Failed)
+            throw new BusinessException("Purana password ghalat hai.");
+
+        await _db.ExecuteAsync("usp_User_SetPassword", new
+        {
+            UserId = userId,
+            PasswordHash = _hasher.HashPassword(new AppUser(), newPassword),
+            ActorUserId = userId
+        }, ct);
     }
 
     private sealed record LoadedUser(UserRow Row, AuthUser User);
