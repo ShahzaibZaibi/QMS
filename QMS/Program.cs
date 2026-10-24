@@ -70,7 +70,7 @@ using (var scope = app.Services.CreateScope())
     {
         app.Logger.LogError(ex,
             "Database se kaam nahi ho saka. Check karein: connection string sahi hai, aur SSMS mein " +
-            "QMS/Database/Phase1 ki scripts 01, 02, 03 tarteeb se chal chuki hain.");
+            "Database/Phase1 ki scripts 01, 02, 03 tarteeb se chal chuki hain.");
     }
 }
 
