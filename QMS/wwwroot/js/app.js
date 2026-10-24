@@ -13,11 +13,6 @@
     return !!u && Array.isArray(u.permissions) && u.permissions.indexOf(code) !== -1;
   }
 
-  function requireLogin() {
-    if (!Api.isLoggedIn()) { location.replace('/login.html'); return false; }
-    return true;
-  }
-
   function notify(message, type) {
     var $box = $('#toastBox');
     if (!$box.length) $box = $('<div id="toastBox" class="toast-container position-fixed top-0 end-0 p-3"></div>').appendTo('body');
@@ -64,15 +59,19 @@
     });
   }
 
-  /* Page ke shuru mein: if (!App.init('dashboard', 'Dashboard')) return; */
+  /* Page ke shuru mein:
+       App.init('dashboard', 'Dashboard').then(function (user) { ...page ka kaam... });
+     Login na ho to login page par bhej deta hai; permission na ho to dashboard par. */
   function init(activeKey, pageTitle, permission) {
-    if (!requireLogin()) return false;
-    if (permission && !hasPermission(permission)) {
-      location.replace('/index.html');
-      return false;
-    }
-    renderLayout(activeKey, pageTitle);
-    return true;
+    var never = new Promise(function () {});   // page ka baqi script na chale
+    return Api.me().then(function () {
+      if (permission && !hasPermission(permission)) { location.replace('/index.html'); return never; }
+      renderLayout(activeKey, pageTitle);
+      return Api.user();
+    }).catch(function (xhr) {
+      if (xhr && xhr.status !== 401) notify(Api.errorMessage(xhr), 'danger');
+      return never;
+    });
   }
 
   global.App = { init: init, hasPermission: hasPermission, notify: notify };

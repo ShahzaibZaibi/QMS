@@ -1,8 +1,8 @@
-using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Data.SqlClient;
 using QMS.Infrastructure;
 using QMS.Models;
 using QMS.Repositories;
@@ -12,39 +12,30 @@ using QMS.Startup;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---- Config (secrets code mein nahi: User Secrets / environment variables) ----
-var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
-jwt.Validate();
-builder.Services.AddSingleton(jwt);
-
 // ---- Layers: Controller -> Service -> Repository (Dapper SP) ----
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ISpExecutor, SpExecutor>();
 builder.Services.AddSingleton<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
-builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IShopProfileService, ShopProfileService>();
-builder.Services.AddTransient<DbMigrator>();
 builder.Services.AddTransient<OwnerBootstrapper>();
 
-// ---- Authentication (JWT) + Permission based authorization ----
+// ---- Login: cookie (HttpOnly, SameSite=Strict). Cookie mein sirf user Id; permissions har request par DB se ----
+var sessionHours = builder.Configuration.GetValue("Auth:SessionHours", 10);
 builder.Services
-    .AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        options.MapInboundClaims = false;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwt.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwt.Audience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            NameClaimType = ClaimNames.UserName,
-            RoleClaimType = ClaimNames.Role
-        };
+        options.Cookie.Name = "qms.auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;   // HTTPS par Secure, LAN ke http par bhi chale
+        options.ExpireTimeSpan = TimeSpan.FromHours(sessionHours);
+        options.SlidingExpiration = false;                                // ek session = ek kaam ka din
+        // API hai: login page par redirect nahi, seedha 401 / 403
+        options.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
+        options.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
+        options.Events.OnValidatePrincipal = SessionValidator.ValidateAsync;
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
@@ -68,13 +59,19 @@ builder.Services.AddHealthChecks().AddCheck<DbHealthCheck>("database");
 
 var app = builder.Build();
 
-// ---- Database scripts + pehla Owner ----
+// ---- Pehla Owner (sirf jab koi user nahi). Database scripts aap SSMS mein khud chalate hain. ----
 using (var scope = app.Services.CreateScope())
 {
-    if (app.Configuration.GetValue<bool>("Database:RunMigrations"))
-        await scope.ServiceProvider.GetRequiredService<DbMigrator>().RunAsync();
-
-    await scope.ServiceProvider.GetRequiredService<OwnerBootstrapper>().RunAsync();
+    try
+    {
+        await scope.ServiceProvider.GetRequiredService<OwnerBootstrapper>().RunAsync();
+    }
+    catch (SqlException ex)
+    {
+        app.Logger.LogError(ex,
+            "Database se kaam nahi ho saka. Check karein: connection string sahi hai, aur SSMS mein " +
+            "QMS/Database/Phase1 ki scripts 01, 02, 03 tarteeb se chal chuki hain.");
+    }
 }
 
 // ---- Pipeline ----

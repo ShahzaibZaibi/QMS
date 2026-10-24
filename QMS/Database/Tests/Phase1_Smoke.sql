@@ -1,4 +1,7 @@
--- Haath se chalane ka test (runner isay nahi chalata). QistDB par SSMS mein chalayein.
+-- Haath se chalane ka test (runner isay nahi chalata). SSMS mein chalayein (pehle app se ek baar login karein taake Owner user ban jaye).
+USE QistDB;
+GO
+
 -- 1) Number generator: pehla number MAIN-R-<saal>-000001, doosra ...000002
 DECLARE @n1 NVARCHAR(50), @n2 NVARCHAR(50);
 EXEC dbo.usp_Number_Next @BranchId = 1, @SeqType = N'Receipt', @Number = @n1 OUTPUT;

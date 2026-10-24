@@ -31,8 +31,9 @@
   <script src="/js/app.js"></script>
   <script>
     $(function () {
-      if (!App.init('dashboard', 'Dashboard')) return;
-      $('#welcomeName').text(Api.user().fullName);
+      App.init('dashboard', 'Dashboard').then(function (user) {
+        $('#welcomeName').text(user.fullName);
+      });
     });
   </script>
 </body>

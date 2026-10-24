@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -18,31 +19,24 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken ct)
+    public async Task<ActionResult<AuthUser>> Login(LoginRequest request, CancellationToken ct)
     {
-        var result = await _auth.LoginAsync(request, ct);
-        if (result is null) return Unauthorized(new { message = "Username ya password ghalat hai." });
-        return result;
-    }
+        var user = await _auth.LoginAsync(request, ct);
+        if (user is null) return Unauthorized(new { message = "Username ya password ghalat hai." });
 
-    [HttpPost("refresh")]
-    [AllowAnonymous]
-    [EnableRateLimiting("login")]
-    public async Task<ActionResult<AuthResponse>> Refresh(RefreshRequest request, CancellationToken ct)
-    {
-        var result = await _auth.RefreshAsync(request.RefreshToken, ct);
-        if (result is null) return Unauthorized(new { message = "Session khatam ho gaya, dobara login karein." });
-        return result;
+        await HttpContext.SignInAsync(PrincipalFactory.Scheme, PrincipalFactory.Minimal(user.Id));
+        return user;
     }
 
     [HttpPost("logout")]
     [AllowAnonymous]
-    public async Task<IActionResult> Logout(RefreshRequest request, CancellationToken ct)
+    public async Task<IActionResult> Logout()
     {
-        await _auth.LogoutAsync(request.RefreshToken, ct);
+        await HttpContext.SignOutAsync(PrincipalFactory.Scheme);
         return NoContent();
     }
 
+    /// <summary>Login hai to uski tafseel aur permissions, warna 401. Har page isi se menu banata hai.</summary>
     [HttpGet("me")]
     [Authorize]
     public ActionResult<object> Me() => new

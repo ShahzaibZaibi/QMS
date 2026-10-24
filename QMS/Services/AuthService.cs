@@ -1,62 +1,45 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using QMS.Models;
 using QMS.Models.DTOs;
 using QMS.Repositories;
-using QMS.Security;
 
 namespace QMS.Services;
 
 public sealed class AuthService : IAuthService
 {
-    private readonly ISpExecutor _db;
-    private readonly ITokenService _tokens;
-    private readonly IPasswordHasher<AppUser> _hasher;
-    private readonly JwtSettings _jwt;
+    private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(20);
 
-    public AuthService(ISpExecutor db, ITokenService tokens, IPasswordHasher<AppUser> hasher, JwtSettings jwt)
+    private readonly ISpExecutor _db;
+    private readonly IPasswordHasher<AppUser> _hasher;
+    private readonly IMemoryCache _cache;
+
+    public AuthService(ISpExecutor db, IPasswordHasher<AppUser> hasher, IMemoryCache cache)
     {
         _db = db;
-        _tokens = tokens;
         _hasher = hasher;
-        _jwt = jwt;
+        _cache = cache;
     }
 
-    public async Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    public async Task<AuthUser?> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         var loaded = await LoadUserAsync("usp_Auth_Login", new { Username = request.Username.Trim() }, ct);
         if (loaded is null || !loaded.Row.IsActive) return null;
 
         var check = _hasher.VerifyHashedPassword(new AppUser(), loaded.Row.PasswordHash, request.Password);
-        if (check == PasswordVerificationResult.Failed) return null;
-
-        var refreshToken = _tokens.CreateRefreshToken();
-        await _db.ExecuteAsync("usp_RefreshToken_Create",
-            new { UserId = loaded.Row.Id, TokenHash = _tokens.Hash(refreshToken), ValidHours = _jwt.RefreshTokenHours }, ct);
-
-        return BuildResponse(loaded.User, refreshToken);
+        return check == PasswordVerificationResult.Failed ? null : loaded.User;
     }
 
-    public async Task<AuthResponse?> RefreshAsync(string refreshToken, CancellationToken ct = default)
+    public async Task<AuthUser?> GetActiveUserAsync(int userId, CancellationToken ct = default)
     {
-        var newToken = _tokens.CreateRefreshToken();
-        var userId = await _db.QueryFirstOrDefaultAsync<int?>("usp_RefreshToken_Rotate",
-            new { OldHash = _tokens.Hash(refreshToken), NewHash = _tokens.Hash(newToken), ValidHours = _jwt.RefreshTokenHours }, ct);
-        if (userId is null) return null;
+        var key = $"authuser:{userId}";
+        if (_cache.TryGetValue(key, out AuthUser? cached) && cached is not null) return cached;
 
-        // Permissions dobara DB se: role badla ho to naya access token mein naye ikhtiyarat aate hain
-        var loaded = await LoadUserAsync("usp_Auth_GetUser", new { UserId = userId.Value }, ct);
+        var loaded = await LoadUserAsync("usp_Auth_GetUser", new { UserId = userId }, ct);
         if (loaded is null || !loaded.Row.IsActive) return null;
 
-        return BuildResponse(loaded.User, newToken);
-    }
-
-    public Task LogoutAsync(string refreshToken, CancellationToken ct = default) =>
-        _db.ExecuteAsync("usp_RefreshToken_Revoke", new { TokenHash = _tokens.Hash(refreshToken) }, ct);
-
-    private AuthResponse BuildResponse(AuthUser user, string refreshToken)
-    {
-        var (token, expires) = _tokens.CreateAccessToken(user);
-        return new AuthResponse(token, expires, refreshToken, user);
+        _cache.Set(key, loaded.User, CacheFor);
+        return loaded.User;
     }
 
     private sealed record LoadedUser(UserRow Row, AuthUser User);

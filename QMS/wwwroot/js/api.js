@@ -1,68 +1,27 @@
-/* Ek hi $.ajax wrapper: token lagata hai, 401 par ek martaba refresh try karta hai, phir login par bhejta hai. */
+/* Ek hi $.ajax wrapper. Login cookie browser khud bhejta hai, token ka koi intezam nahi.
+   401 aaye to seedha login page par. */
 (function (global, $) {
   'use strict';
 
-  var KEYS = { access: 'qms.access', refresh: 'qms.refresh', user: 'qms.user' };
-  var refreshing = null;
+  var currentUser = null;
 
-  var store = {
-    access: function () { return localStorage.getItem(KEYS.access); },
-    refresh: function () { return localStorage.getItem(KEYS.refresh); },
-    user: function () {
-      try { return JSON.parse(localStorage.getItem(KEYS.user)); } catch (e) { return null; }
-    },
-    save: function (r) {
-      localStorage.setItem(KEYS.access, r.accessToken);
-      localStorage.setItem(KEYS.refresh, r.refreshToken);
-      localStorage.setItem(KEYS.user, JSON.stringify(r.user));
-    },
-    clear: function () {
-      localStorage.removeItem(KEYS.access);
-      localStorage.removeItem(KEYS.refresh);
-      localStorage.removeItem(KEYS.user);
-    }
-  };
-
-  function toLogin() {
-    store.clear();
-    location.replace('/login.html');
-  }
-
-  function doRefresh() {
-    if (!store.refresh()) return $.Deferred().reject().promise();
-    if (!refreshing) {
-      refreshing = $.ajax({
-        url: '/api/auth/refresh', method: 'POST', contentType: 'application/json',
-        data: JSON.stringify({ refreshToken: store.refresh() })
-      }).done(function (r) { store.save(r); })
-        .always(function () { refreshing = null; });
-    }
-    return refreshing;
-  }
+  function toLogin() { location.replace('/login.html'); }
 
   function request(method, url, data, isForm) {
     return new Promise(function (resolve, reject) {
-      function send(canRetry) {
-        var opts = { url: url, method: method, headers: {} };
-        if (store.access()) opts.headers.Authorization = 'Bearer ' + store.access();
-        if (isForm) {
-          opts.data = data; opts.processData = false; opts.contentType = false;
-        } else if (data !== undefined && data !== null) {
-          if (method === 'GET') { opts.data = data; }
-          else { opts.data = JSON.stringify(data); opts.contentType = 'application/json'; }
-        }
-        $.ajax(opts)
-          .done(function (result) { resolve(result); })
-          .fail(function (xhr) {
-            if (xhr.status === 401) {
-              if (canRetry && store.refresh()) {
-                doRefresh().done(function () { send(false); })
-                           .fail(function () { toLogin(); reject(xhr); });
-              } else { toLogin(); reject(xhr); }
-            } else { reject(xhr); }
-          });
+      var opts = { url: url, method: method };
+      if (isForm) {
+        opts.data = data; opts.processData = false; opts.contentType = false;
+      } else if (data !== undefined && data !== null) {
+        if (method === 'GET') { opts.data = data; }
+        else { opts.data = JSON.stringify(data); opts.contentType = 'application/json'; }
       }
-      send(true);
+      $.ajax(opts)
+        .done(function (result) { resolve(result); })
+        .fail(function (xhr) {
+          if (xhr.status === 401) toLogin();
+          reject(xhr);
+        });
     });
   }
 
@@ -90,8 +49,12 @@
     del: function (url) { return request('DELETE', url); },
     upload: function (url, formData) { return request('POST', url, formData, true); },
     errorMessage: errorMessage,
-    isLoggedIn: function () { return !!store.access() && !!store.user(); },
-    user: function () { return store.user(); },
+
+    /* Login hai to user + permissions (taza, server se), warna login page */
+    me: function () {
+      return request('GET', '/api/auth/me').then(function (u) { currentUser = u; return u; });
+    },
+    user: function () { return currentUser; },
 
     /* Login 401 par redirect nahi karta (ghalat password normal baat hai) */
     login: function (username, password) {
@@ -99,19 +62,13 @@
         $.ajax({
           url: '/api/auth/login', method: 'POST', contentType: 'application/json',
           data: JSON.stringify({ username: username, password: password })
-        }).done(function (r) { store.save(r); resolve(r); })
+        }).done(function (u) { currentUser = u; resolve(u); })
           .fail(function (xhr) { reject(xhr); });
       });
     },
 
     logout: function () {
-      var token = store.refresh();
-      var done = function () { toLogin(); };
-      if (!token) { done(); return; }
-      $.ajax({
-        url: '/api/auth/logout', method: 'POST', contentType: 'application/json',
-        data: JSON.stringify({ refreshToken: token })
-      }).always(done);
+      $.ajax({ url: '/api/auth/logout', method: 'POST' }).always(toLogin);
     }
   };
 })(window, jQuery);

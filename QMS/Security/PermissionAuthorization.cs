@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -46,7 +46,7 @@ public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvide
     {
         if (policyName.StartsWith(HasPermissionAttribute.PolicyPrefix, StringComparison.Ordinal))
         {
-            var policy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+            var policy = new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
                 .RequireAuthenticatedUser()
                 .AddRequirements(new PermissionRequirement(policyName[HasPermissionAttribute.PolicyPrefix.Length..]))
                 .Build();

@@ -1,3 +1,18 @@
+/*
+  Marhala 1 - BASE DATA (branch, roles, permissions, payment methods, shop profile, settings)
+  01 aur 02 ke baad chalayein. Pehli baar ke liye zaroori hai, warna login nahi chalega.
+  Dobara chal jaye to khud ruk jati hai.
+*/
+USE QistDB;
+GO
+
+IF EXISTS (SELECT 1 FROM dbo.Roles)
+BEGIN
+    RAISERROR(N'Base data pehle se maujood hai. Ye script dobara chalane ki zaroorat nahi.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+
 -- Pehli branch aur warehouse (Owner baad mein Branches page se naam/code badal sakta hai)
 INSERT dbo.Branches (Code, Name) VALUES (N'MAIN', N'Main Branch');
 GO
@@ -83,4 +98,7 @@ INSERT dbo.Settings ([Key], [Value]) VALUES
  (N'GraceDays',          N'0'),
  (N'LateFeeFirst',       N'0'),
  (N'AllowNegativeStock', N'0');
+GO
+
+SET NOEXEC OFF;
 GO

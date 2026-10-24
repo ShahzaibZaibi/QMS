@@ -36,7 +36,8 @@
   <script src="/js/api.js"></script>
   <script>
     $(function () {
-      if (Api.isLoggedIn()) { location.replace('/index.html'); return; }
+      // Pehle se login hai to seedha dashboard
+      $.getJSON('/api/auth/me').done(function () { location.replace('/index.html'); });
 
       $.getJSON('/api/shop-profile/public').done(function (p) {
         $('#shopName').text(p.shopName);

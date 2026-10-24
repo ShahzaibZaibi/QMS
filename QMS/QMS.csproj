@@ -11,13 +11,6 @@
     <!-- Floating versions: pehli restore par latest aa jati hai; chahein to baad mein exact version pin kar dein -->
     <PackageReference Include="Dapper" Version="2.1.*" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.*" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- SQL scripts app ke saath copy hon (build + publish), Tests folder ke siwa -->
-    <None Update="Database\**\*.sql" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <None Update="Database\Tests\**" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>

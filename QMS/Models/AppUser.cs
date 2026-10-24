@@ -13,9 +13,3 @@ public sealed class UserRow
     public int BranchId { get; set; }
     public bool IsActive { get; set; }
 }
-
-public sealed class AppliedScript
-{
-    public string ScriptName { get; set; } = "";
-    public string Hash { get; set; } = "";
-}

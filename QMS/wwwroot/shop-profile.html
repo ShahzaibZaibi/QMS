@@ -84,49 +84,50 @@
   <script src="/js/app.js"></script>
   <script>
     $(function () {
-      if (!App.init('shop-profile', 'Shop Profile', 'Settings.Edit')) return;
+      App.init('shop-profile', 'Shop Profile', 'Settings.Edit').then(function () {
 
-      var FIELDS = ['shopName', 'phone', 'email', 'address', 'registrationNo',
-                    'currencySymbol', 'defaultLanguage', 'receiptHeader', 'receiptFooter'];
+        var FIELDS = ['shopName', 'phone', 'email', 'address', 'registrationNo',
+                      'currencySymbol', 'defaultLanguage', 'receiptHeader', 'receiptFooter'];
 
-      function fill(p) {
-        FIELDS.forEach(function (f) { $('#' + f).val(p[f] || ''); });
-        if (p.logoPath) $('#logoPreview').attr('src', p.logoPath).removeClass('d-none');
-      }
+        function fill(p) {
+          FIELDS.forEach(function (f) { $('#' + f).val(p[f] || ''); });
+          if (p.logoPath) $('#logoPreview').attr('src', p.logoPath).removeClass('d-none');
+        }
 
-      Api.get('/api/shop-profile').then(fill).catch(function (xhr) {
-        App.notify(Api.errorMessage(xhr), 'danger');
-      });
+        Api.get('/api/shop-profile').then(fill).catch(function (xhr) {
+          App.notify(Api.errorMessage(xhr), 'danger');
+        });
 
-      $('#profileForm').on('submit', function (e) {
-        e.preventDefault();
-        var payload = {};
-        FIELDS.forEach(function (f) { payload[f] = $.trim($('#' + f).val()); });
-        if (!payload.shopName) { App.notify('Dukaan ka naam likhna zaroori hai.', 'warning'); return; }
-        if (!payload.currencySymbol) { App.notify('Currency likhna zaroori hai.', 'warning'); return; }
+        $('#profileForm').on('submit', function (e) {
+          e.preventDefault();
+          var payload = {};
+          FIELDS.forEach(function (f) { payload[f] = $.trim($('#' + f).val()); });
+          if (!payload.shopName) { App.notify('Dukaan ka naam likhna zaroori hai.', 'warning'); return; }
+          if (!payload.currencySymbol) { App.notify('Currency likhna zaroori hai.', 'warning'); return; }
 
-        var $btn = $('#saveBtn').prop('disabled', true).text('Save ho raha hai...');
-        Api.put('/api/shop-profile', payload)
-          .then(function (p) { fill(p); App.notify('Shop Profile save ho gaya.'); $('#navShop').text(p.shopName); })
-          .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
-          .finally(function () { $btn.prop('disabled', false).text('Save karein'); });
-      });
+          var $btn = $('#saveBtn').prop('disabled', true).text('Save ho raha hai...');
+          Api.put('/api/shop-profile', payload)
+            .then(function (p) { fill(p); App.notify('Shop Profile save ho gaya.'); $('#navShop').text(p.shopName); })
+            .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
+            .finally(function () { $btn.prop('disabled', false).text('Save karein'); });
+        });
 
-      $('#logoBtn').on('click', function () {
-        var file = $('#logoFile')[0].files[0];
-        if (!file) { App.notify('Pehle logo ki file chunein.', 'warning'); return; }
-        var fd = new FormData();
-        fd.append('file', file);
-        var $btn = $('#logoBtn').prop('disabled', true);
-        Api.upload('/api/shop-profile/logo', fd)
-          .then(function (r) {
-            $('#logoPreview').attr('src', r.logoPath).removeClass('d-none');
-            $('#navLogo').attr('src', r.logoPath).removeClass('d-none');
-            $('#logoFile').val('');
-            App.notify('Logo badal gaya.');
-          })
-          .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
-          .finally(function () { $btn.prop('disabled', false); });
+        $('#logoBtn').on('click', function () {
+          var file = $('#logoFile')[0].files[0];
+          if (!file) { App.notify('Pehle logo ki file chunein.', 'warning'); return; }
+          var fd = new FormData();
+          fd.append('file', file);
+          var $btn = $('#logoBtn').prop('disabled', true);
+          Api.upload('/api/shop-profile/logo', fd)
+            .then(function (r) {
+              $('#logoPreview').attr('src', r.logoPath).removeClass('d-none');
+              $('#navLogo').attr('src', r.logoPath).removeClass('d-none');
+              $('#logoFile').val('');
+              App.notify('Logo badal gaya.');
+            })
+            .catch(function (xhr) { App.notify(Api.errorMessage(xhr), 'danger'); })
+            .finally(function () { $btn.prop('disabled', false); });
+        });
       });
     });
   </script>
