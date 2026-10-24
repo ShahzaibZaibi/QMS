@@ -8,7 +8,7 @@ Electronics dukaan ke liye qist ka hisaab. Poori specification: `QMS-Docment.pdf
 - Har table ka primary key `INT IDENTITY(1,1)` (GUID kahin nahi, junction tables mein bhi `Id` + unique constraint).
 - `RequestKey` (double-submit se bachao) GUID column nahi, `NVARCHAR(64)` random text hai.
 - Login: JWT nahi, ASP.NET Core ki cookie (HttpOnly, SameSite=Strict, 10 ghante ka session). Cookie mein sirf user Id; roles/permissions har request par DB se (20 second cache), is liye user band karne ya role badalne ka asar jaldi lagta hai.
-- Database: app koi migration nahi chalati. Tables/procedures ki scripts `QMS/Database/MarhalaN/` mein hain, aap SSMS mein khud chalate hain.
+- Database: app koi migration nahi chalati. Tables/procedures ki scripts `QMS/Database/PhaseN/` mein hain, aap SSMS mein khud chalate hain.
 - Sara hisaab sirf stored procedures mein; C# sirf call karta hai. SP ki ghalti `THROW 50xxx` se aati hai aur user ko saaf message ke saath 400 milta hai.
 - Tareekhen PKT (UTC+5): `dbo.fn_PktNow()` / `dbo.fn_PktToday()`.
 
